@@ -1,4 +1,4 @@
-// server.js - UPGRADED to support AI model selection!
+// server.js - v16.0 - Perfectly matched to the Zero Error JavaScript Extension
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
@@ -25,7 +25,8 @@ app.post('/get-ai-response', async (req, res) => {
         return res.status(400).json({ error: { message: "Prompt is required." } });
     }
 
-    const selectedModel = model || 'deepseek/deepseek-chat:free'; // Default model
+    // Use the model sent from the extension, or a reliable default
+    const selectedModel = model || 'deepseek/deepseek-chat:free';
 
     try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
