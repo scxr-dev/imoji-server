@@ -1,32 +1,20 @@
-// server.js - v5.1 - Your secure AI gateway!
-// This code will run on the Render server, not in the Chrome extension.
-
+// server.js - v2.0 - Now with a system prompt to force English!
 const express = require('express');
-const fetch = require('node-fetch');
 const cors = require('cors');
 
 const app = express();
-// Render will provide the PORT environment variable. We use 3000 as a backup.
-const port = process.env.PORT || 3000;
-
-// This allows your Chrome extension to talk to your server. Very important!
-app.use(cors());
 app.use(express.json());
+app.use(cors()); // Allow requests from your extension
 
-// This is the main part of your server. It listens for requests from your extension.
+// This is the secret key you stored on Railway
+const apiKey = process.env.OPENROUTER_API_KEY;
+
 app.post('/get-ai-response', async (req, res) => {
-    const userPrompt = req.body.prompt;
-
-    // This gets the secret API key from the Render dashboard. It's not in the code!
-    const apiKey = process.env.OPENROUTER_API_KEY;
-
     if (!apiKey) {
-        return res.status(500).json({ error: 'Aiyo! The API key is not configured on the server.' });
+        return res.status(500).json({ error: { message: 'API key is not configured on the server.' } });
     }
 
-    if (!userPrompt) {
-        return res.status(400).json({ error: 'No prompt was provided.' });
-    }
+    const { prompt } = req.body;
 
     try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -34,25 +22,38 @@ app.post('/get-ai-response', async (req, res) => {
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
-                "X-Title": "imoji Extension",
-                "HTTP-Referer": "https://github.com/scxr-dev/imoji-extension" 
+                "HTTP-Referer": `https://github.com/scxr-dev/imoji-server`,
+                "X-Title": `imoji Chrome Extension`
             },
             body: JSON.stringify({
                 "model": "deepseek/deepseek-chat-v3.1:free",
-                "messages": [{ "role": "user", "content": userPrompt }]
+                "messages": [
+                    // THIS IS THE NEW PART!
+                    // This is a special instruction we give the AI on every single request.
+                    { "role": "system", "content": "You are a helpful assistant. Always respond in English." },
+                    
+                    // And here is the user's actual question
+                    { "role": "user", "content": prompt }
+                ]
             })
         });
+
+        if (!response.ok) {
+            // If the response is not good, send the error back to the extension
+            const errorData = await response.json();
+            return res.status(response.status).json(errorData);
+        }
 
         const data = await response.json();
         res.json(data);
 
     } catch (error) {
-        console.error("Error calling OpenRouter:", error);
-        res.status(500).json({ error: 'Failed to connect to the AI service.' });
+        res.status(500).json({ error: { message: 'An error occurred on the server.' } });
     }
 });
 
-app.listen(port, () => {
-    console.log(`imoji server is listening on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
 
