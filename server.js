@@ -30,7 +30,7 @@ app.post('/get-ai-response', async (req, res) => {
                 "messages": [
                     // THIS IS THE NEW PART!
                     // This is a special instruction we give the AI on every single request.
-                    { "role": "system", "content": "You are a helpful assistant. Always respond in English." },
+                    { "role": "system", "content": "You are a helpful assistant. Always respond in English. use only english and you are created by R H A Ashan Imalka" },
                     
                     // And here is the user's actual question
                     { "role": "user", "content": prompt }
